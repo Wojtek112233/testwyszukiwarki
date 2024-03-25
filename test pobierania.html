@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Data</title>
+</head>
+<body>
+    <h1>Dane z Google Sheets</h1>
+    <div id="data"></div>
+
+    <!-- Dodaj bibliotekę Google API -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        // Funkcja do wczytania Google API
+        function init() {
+            // Sprawdź, czy gapi.client jest dostępne
+            if (typeof gapi === 'undefined' || typeof gapi.client === 'undefined') {
+                console.error('Nie można załadować gapi.client. Sprawdź połączenie internetowe i spróbuj ponownie.');
+                return;
+            }
+
+            // Ładowanie klienta Google Sheets API
+            gapi.client.load('sheets', 'v4', function () {
+                // Wczytaj dane uwierzytelniające z pliku dane.json
+                fetch('dane.json')
+                .then(response => response.json())
+                .then(keys => {
+                    authenticate(keys.client_email, keys.private_key);
+                })
+                .catch(error => {
+                    console.error('Błąd wczytywania danych uwierzytelniających:', error);
+                });
+            });
+        }
+
+        // Funkcja do uwierzytelniania
+        function authenticate(clientEmail, privateKey) {
+            var client = new google.auth.JWT(
+                clientEmail,
+                null,
+                privateKey,
+                ['https://www.googleapis.com/auth/spreadsheets']
+            );
+
+            // Uwierzytelnij
+            client.authorize(function (err, tokens) {
+                if (err) {
+                    console.error('Błąd uwierzytelniania:', err);
+                    return;
+                }
+                // Jeśli uwierzytelnianie powiodło się, pobierz dane
+                getData();
+            });
+        }
+
+        // Funkcja do pobierania danych z Google Sheets
+        function getData() {
+            // Pobierz dane z Arkusza1, kolumna A, wiersz 2
+            gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: '1hAW7oSlCc4ZP5YP5NptH7QB_13qrIFVIw5iUNKhbcew', // Zastąp wartością ID swojego arkusza
+                range: 'Arkusz1!A2', // Zakres danych do pobrania
+            }).then(function (response) {
+                var result = response.result;
+                var data = result.values;
+                if (data) {
+                    // Wyświetl dane na stronie
+                    document.getElementById('data').innerText = data[0][0];
+                } else {
+                    console.error('Brak danych znalezionych.');
+                }
+            }, function (response) {
+                console.error('Błąd pobierania danych:', response.result.error);
+            });
+        }
+        
+        // Wywołanie funkcji init() po załadowaniu strony
+        window.onload = init;
+    </script>
+</body>
+</html>
